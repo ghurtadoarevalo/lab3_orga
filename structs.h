@@ -2,19 +2,24 @@
 #define STRUCT_H
 
 typedef struct {
-    int words_quantity;
 	int * words;
 } block_struct;
 
 
 typedef struct {
-    int blocks_quantity;
     block_struct** blocks;
 } set_struct;
 
 typedef struct {
     int sets_quantity;
+    int blocks_quantity;
+    int words_quantity;
     set_struct ** sets;
 } cache_struct;
+
+typedef struct	{
+	int caches_quantity;
+	cache_struct ** caches;
+} allCaches_struct;
 
 #endif

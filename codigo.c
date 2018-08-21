@@ -28,7 +28,7 @@ char** readData(char* fp_source_name_1)
 {
 	FILE *fp = NULL;
 	int size = 0;
-	int count = 0;
+	int count = 1;
 	int linesNumber = 0;
 	int lineLen = 1;
 	char* dataFileChar = NULL;
@@ -81,13 +81,12 @@ char** readData(char* fp_source_name_1)
 			lineLen++;;
 		}
 	}
-    //printf("%s\n",dataFileChar );
 
 	//Se separan las palabras por \n
 	temp = malloc(sizeof(char)*(size+1));
 	strcpy(temp,dataFileChar);
 	token = strtok(temp, "\n");
-    //printf("%s\n",token );
+    lines[0] = malloc(sizeof(char)*2);
 	while(token != NULL)
 	{
         //printf("%s\n",token );
@@ -99,10 +98,104 @@ char** readData(char* fp_source_name_1)
 		count++;
 	}
 
+    sprintf(lines[0],"%d", count-1);
+
     return lines;
 }
 
-void allCaches(int cache_size,int words_in_block)
+void showCache(cache_struct * cache)
+{
+    for (size_t i = 0; i < cache->sets_quantity; i++)
+    {
+        printf("\nConjunto %ld: \n", i);
+        for (size_t j = 0; j < cache->blocks_quantity; j++)
+        {
+            printf("Bloque %ld: \n", j);
+            for (size_t k = 0; k < cache->words_quantity; k++)
+            {
+                printf("Palabra %ld: Mem(%d)\n",k,cache->sets[i]->blocks[j]->words[k]);
+            }
+        }
+    }
+}
+
+cache_struct * build_cache(int words_quantity ,int blocks_quantity, int sets_quantity)
+{
+    cache_struct * cache = malloc(sizeof(cache_struct));
+    cache->sets = malloc(sizeof(set_struct*)*sets_quantity);
+    cache->sets_quantity = sets_quantity;
+    cache->blocks_quantity = blocks_quantity;
+    cache->words_quantity = words_quantity;
+
+    for (size_t i = 0; i < sets_quantity; i++)
+    {
+        cache->sets[i] = malloc(sizeof(set_struct));
+        cache->sets[i]->blocks = malloc(sizeof(block_struct*)*blocks_quantity);
+
+        for (size_t j = 0; j < blocks_quantity; j++)
+        {
+            cache->sets[i]->blocks[j] = malloc(sizeof(block_struct));
+            cache->sets[i]->blocks[j]->words = malloc(sizeof(int)*words_quantity);
+
+            for (size_t k = 0; k < words_quantity; k++)
+            {
+                cache->sets[i]->blocks[j]->words[k] = -1;
+            }
+        }
+    }
+
+    return cache;
+}
+
+void populateCache(cache_struct * cache, char * fp_source_name)
+{
+    char** data;
+    int option;
+    int block;
+    int set;
+    int block;
+    data = readData(fp_source_name);
+
+    //Si es directo
+    if (cache->sets_quantity == 1)
+    {
+        option = 1;
+    }
+
+    //Si es full asociativo
+    else if(cache->blocks_quantity == 1)
+    {
+        option = 2;
+    }
+
+    //Si es n-asociativo
+    else
+    {
+        option = 3;
+    }
+
+    switch (option) {
+        case 1:
+                printf("Sets Quantity: %d , blocks_quantity: %d, words_quantity: %d\n", cache->sets_quantity,cache->blocks_quantity, cache->words_quantity );
+                for (size_t i = 1; i <= atoi(data[0]); i++) {
+                    set = ((atoi(data[i])/(4*cache->words_quantity)) % cache->blocks_quantity);
+                    block = ((atoi(data[i])/(4*cache->words_quantity)) % cache->blocks_quantity);
+
+                    if (cache->words_quantity > 1)
+                    {
+                            for (size_t i = 0; i < caches->words_quantity; i++)
+                            {
+                                word = block%(cache->words_quantity); 
+                                cache->sets[block]->blocks[block]->words[word];
+                            }
+                    }
+
+                }
+
+    }
+}
+
+allCaches_struct * allCaches(int cache_size,int words_in_block)
 {
     int total_blocks_quantity = (cache_size/8)/(4*words_in_block);
     int n = 0;
@@ -113,33 +206,29 @@ void allCaches(int cache_size,int words_in_block)
     while(sets_quantity != total_blocks_quantity)
     {
         sets_quantity = pow(2,n);
-        blocks_quantity = (total_blocks_quantity/sets_quantity);
-
-        printf("Sets %d, Blocks por set: %d, Words por block: %d\n",sets_quantity,blocks_quantity, words_quantity );
         n++;
     }
-    //cache_struct ** caches = malloc(sizeof(cache_struct*)*)
-}
 
-cache_struct * build_cache(int words_quantity ,int blocks_quantity, int sets_quantity)
-{
-    cache_struct * cache = malloc(sizeof(cache_struct));
-    cache->sets = malloc(sizeof(set_struct*)*sets_quantity);
-    cache->sets_quantity = sets_quantity;
-    for (size_t i = 0; i < sets_quantity; i++)
+    allCaches_struct * allCaches = malloc(sizeof(allCaches_struct));
+    allCaches->caches = malloc(sizeof(cache_struct*)*n);
+    allCaches->caches_quantity = n;
+
+    for (size_t i = 0; i < n ; i++)
     {
-        cache->sets[i] = malloc(sizeof(set_struct));
-        cache->sets[i]->blocks = malloc(sizeof(block_struct*)*blocks_quantity);
-        cache->sets[i]->blocks_quantity = blocks_quantity;
-
-        for (size_t j = 0; j < blocks_quantity; j++)
-        {
-            cache->sets[i]->blocks[j] = malloc(sizeof(block_struct));
-            cache->sets[i]->blocks[j]->words = malloc(sizeof(int)*words_quantity);
-        }
+        sets_quantity = pow(2,i);
+        blocks_quantity = (total_blocks_quantity/sets_quantity);
+        allCaches->caches[i] = build_cache(words_quantity,blocks_quantity,sets_quantity);
+        printf("Sets %d, Blocks por set: %d, Words por block: %d\n",sets_quantity,blocks_quantity, words_quantity );
     }
 
-    return cache;
+    // for (size_t i = 0; i < allCaches->caches_quantity; i++)
+    // {
+    //     printf("\n///////////////////////////////////////////////////////////////////////////\n");
+    //     showCache(allCaches->caches[i]);
+    //     printf("\n///////////////////////////////////////////////////////////////////////////\n");
+    // }
+
+    return allCaches;
 }
 
 int main(int argc, char** argv)
@@ -149,6 +238,8 @@ int main(int argc, char** argv)
     char** data;
     int cache_size;
     int words_in_block;
+
+
 
     while ((opt = getopt(argc, argv, "n:m:p:")) != -1)
     {
@@ -167,17 +258,15 @@ int main(int argc, char** argv)
             default: exit(1);
         }
     }
-    data =  readData(fp_source_name);
-    //printf("%d bytes\n",4096/8);
-    printf("bloque = %d\n", ((20/4)*4) % (8));
-    //printf("%s\n",data[1] );
-    //allCaches(cache_size,words_in_block);
-    int words_quantity = 2;
-    int blocks_quantity = 64;
-    int sets_quantity = 1;
-    cache_struct * cache = build_cache(words_quantity ,blocks_quantity, sets_quantity);
 
-    cache->sets[0]->blocks[0]->words[0] = 10;
-    //printf("%d\n",  cache->sets[0]->blocks[0]->words[0] );
+    allCaches_struct * AllCaches = malloc(sizeof(allCaches_struct));
+    AllCaches = allCaches(cache_size,words_in_block);
+
+    for (size_t i = 0; i < AllCaches->caches_quantity; i++)
+    {
+        populateCache(AllCaches->caches[i], fp_source_name);
+    }
+    //printf("%d\n",  cache->sets[0]->blocks[0]->words[0]);
+    printf("bloque = %d\n", ((20/4*words_in_block)) % (64));
 
 }
