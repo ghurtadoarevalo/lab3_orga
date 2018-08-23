@@ -24,12 +24,12 @@ typedef struct {
 typedef struct {
 	int hits;
 	int miss;
-	// 1 = Fifo, 2 = MRU, 3 = LRU
+	// 0 = Fifo, 1 = MRU, 2 = LRU
 	int replaceType;
 
 	int MRUBlock;
 	int LRUBlock;
-	
+
     int sets_quantity;
     int blocks_quantity;
     int words_quantity;
