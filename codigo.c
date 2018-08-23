@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "functions.h"
 #include <math.h>
+
 //Función encargada de remover todos los espacios de un string
 //Entradas: String
 //Salidas: String sin espacios
@@ -20,6 +21,49 @@ void removeSpaces(char *str)
 
     str[count] = '\0';
 }
+
+void queueInsert(int item, queue_struct * queue)
+{
+    if (queue->rear == queue->MAX - 1)
+    printf("Queue Overflow \n");
+    else
+    {
+        if (queue->front == - 1)
+        /*If queue is initially empty */
+        queue->front = 0;
+        queue->rear = queue->rear + 1;
+        queue->queue_array[queue->rear] = item;
+    }
+} /*End of insert()*/
+
+int queueDelete(queue_struct * queue)
+{
+    if (queue->front == - 1 || queue->front > queue->rear)
+    {
+        printf("Queue Underflow \n");
+    }
+    else
+    {
+        printf("Element deleted from queue is : %d\n", queue->queue_array[queue->front]);
+        queue->front = queue->front + 1;
+    }
+
+    return queue->queue_array[queue->front-1];
+} /*End of delete() */
+
+void queueDisplay(queue_struct * queue)
+{
+    int i;
+    if (queue->front == - 1)
+        printf("Queue is empty \n");
+    else
+    {
+        printf("Queue is : \n");
+        for (i = queue->front; i <= queue->rear; i++)
+            printf("%d ", queue->queue_array[i]);
+        printf("\n");
+    }
+} /*End of display() */
 
 //Función encargada de leer todas las lineas del archivo con el nombre que contenga la variable fp_source_name_1
 //Entradas: String
@@ -119,18 +163,25 @@ void showCache(cache_struct * cache)
     }
 }
 
-cache_struct * build_cache(int words_quantity ,int blocks_quantity, int sets_quantity)
+cache_struct * build_cache(int words_quantity ,int blocks_quantity, int sets_quantity, int option)
 {
     cache_struct * cache = malloc(sizeof(cache_struct));
     cache->sets = malloc(sizeof(set_struct*)*sets_quantity);
     cache->sets_quantity = sets_quantity;
     cache->blocks_quantity = blocks_quantity;
     cache->words_quantity = words_quantity;
+    // 1 = Fifo, 2 = MRU, 3 = LRU
+    cache->replaceType = option;
 
     for (size_t i = 0; i < sets_quantity; i++)
     {
         cache->sets[i] = malloc(sizeof(set_struct));
         cache->sets[i]->blocks = malloc(sizeof(block_struct*)*blocks_quantity);
+        cache->sets[i]->queue = malloc(sizeof(queue_struct));
+        cache->sets[i]->queue->MAX = 9999;
+        cache->sets[i]->queue->front = -1;
+        cache->sets[i]->queue->rear = -1;
+        cache->sets[i]->queue->queue_array = malloc(sizeof(int*)*(cache->sets[i]->queue->MAX));
 
         for (size_t j = 0; j < blocks_quantity; j++)
         {
@@ -153,17 +204,18 @@ void populateCache(cache_struct * cache, char * fp_source_name)
     int option;
     int block;
     int set;
-    int block;
+    int word;
+    bool hit;
     data = readData(fp_source_name);
 
     //Si es directo
-    if (cache->sets_quantity == 1)
+    if (cache->blocks_quantity == 1)
     {
         option = 1;
     }
 
     //Si es full asociativo
-    else if(cache->blocks_quantity == 1)
+    else if(cache->sets_quantity == 1)
     {
         option = 2;
     }
@@ -176,22 +228,297 @@ void populateCache(cache_struct * cache, char * fp_source_name)
 
     switch (option) {
         case 1:
-                printf("Sets Quantity: %d , blocks_quantity: %d, words_quantity: %d\n", cache->sets_quantity,cache->blocks_quantity, cache->words_quantity );
-                for (size_t i = 1; i <= atoi(data[0]); i++) {
-                    set = ((atoi(data[i])/(4*cache->words_quantity)) % cache->blocks_quantity);
-                    block = ((atoi(data[i])/(4*cache->words_quantity)) % cache->blocks_quantity);
+            //printf("Sets Quantity: %d , blocks_quantity: %d, words_quantity: %d\n", cache->sets_quantity,cache->blocks_quantity, cache->words_quantity );
+            for (size_t i = 1; i <= atoi(data[0]); i++)
+            {
+                hit = false;
+                block = atoi(data[i]) % cache->sets_quantity;
+                //printf("Block: %d, dirección: %d\n",block,atoi(data[i]));
+                word = block%(cache->words_quantity);
 
-                    if (cache->words_quantity > 1)
+                for (size_t j = 0; j < cache->words_quantity; j++)
+                {
+                    if (cache->sets[block]->blocks[0]->words[j] == atoi(data[i]))
                     {
-                            for (size_t i = 0; i < caches->words_quantity; i++)
-                            {
-                                word = block%(cache->words_quantity); 
-                                cache->sets[block]->blocks[block]->words[word];
-                            }
+                        cache->hits += 1;
+                        hit = true;
+                        break;
                     }
-
                 }
 
+                if (hit == false )
+                {
+                    cache->miss += 1;
+                    for (size_t j = 0; j < cache->words_quantity; j++)
+                    {
+                        if (j < word)
+                        {
+
+                            cache->sets[block]->blocks[0]->words[j] = atoi(data[i]) - word + j;
+                        }
+
+                        else if(j > word)
+                        {
+                            cache->sets[block]->blocks[0]->words[j] = atoi(data[i]) + word + j;
+                        }
+
+                        else
+                        {
+                            cache->sets[block]->blocks[0]->words[j] = atoi(data[i]);
+                        }
+                    }
+                }
+            }
+            showCache(cache);
+
+            printf("Hits: %d, Miss: %d\n",cache->hits, cache->miss );
+            break;
+
+        case 2:
+
+            switch (cache->replaceType)
+            {
+                //Fifo
+                case 1:
+                        for (size_t i = 1; i <= atoi(data[0]); i++)
+                        {
+                            block = atoi(data[i]) % cache->sets_quantity;
+                            //printf("Block: %d, dirección: %d\n",block,atoi(data[i]));
+                            word = block%(cache->words_quantity);
+                            int j;
+                            for (j = 0; j < cache->blocks_quantity; j++)
+                            {
+                                hit = false;
+                                for (size_t k = 0; k < cache->words_quantity; k++)
+                                {
+                                    if (cache->sets[0]->blocks[j]->words[k] == atoi(data[i]))
+                                    {
+                                        cache->hits += 1;
+                                        hit = true;
+                                        break;
+                                    }
+                                }
+
+                                if (hit == true)
+                                {
+                                    break;
+                                }
+                            }
+
+                            if (hit == true)
+                            {
+                                continue;
+                            }
+
+                            cache->miss += 1;
+
+                            for (j = 0; j < cache->blocks_quantity; j++)
+                            {
+                                if (cache->sets[0]->blocks[j]->words[0] == -1)
+                                {
+                                    for (size_t k = 0; k < cache->words_quantity; k++)
+                                    {
+                                        if (k < word)
+                                        {
+                                            cache->sets[0]->blocks[j]->words[k] = atoi(data[i]) - word + k;
+                                        }
+
+                                        else if(k > word)
+                                        {
+                                            cache->sets[0]->blocks[j]->words[k] = atoi(data[i]) + word + k;
+                                        }
+
+                                        else
+                                        {
+                                            queueInsert(atoi(data[i]),cache->sets[0]->queue);
+                                            cache->sets[0]->blocks[j]->words[k] = atoi(data[i]);
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+
+                            if (j == cache->blocks_quantity)
+                            {
+                                block = atoi(data[i]) % cache->blocks_quantity;
+                                //printf("Block: %d, dirección: %d\n",block,atoi(data[i]));
+                                word = block%(cache->words_quantity);
+
+                                int deleted = queueDelete(cache->sets[0]->queue);
+                                for (j = 0; j < cache->blocks_quantity; j++)
+                                {
+                                    bool validator = false;
+
+                                    for (size_t k = 0; k < cache->words_quantity; k++)
+                                    {
+                                        if (cache->sets[0]->blocks[j]->words[k] == deleted)
+                                        {
+                                            validator = true;
+                                            if (k < word)
+                                            {
+                                                cache->sets[0]->blocks[j]->words[k] = atoi(data[i]) - word + k;
+                                            }
+
+                                            else if(k > word)
+                                            {
+                                                cache->sets[0]->blocks[j]->words[k] = atoi(data[i]) + word + k;
+                                            }
+
+                                            else
+                                            {
+                                                queueInsert(atoi(data[i]),cache->sets[0]->queue);
+                                                cache->sets[0]->blocks[j]->words[k] = atoi(data[i]);
+                                            }
+                                        }
+
+                                        if (validator == true)
+                                        {
+                                            if (k < word)
+                                            {
+                                                cache->sets[0]->blocks[j]->words[k] = atoi(data[i]) - word + k;
+                                            }
+
+                                            else if(k > word)
+                                            {
+                                                cache->sets[0]->blocks[j]->words[k] = atoi(data[i]) + word + k;
+                                            }
+
+                                            else
+                                            {
+                                                cache->sets[0]->blocks[j]->words[k] = atoi(data[i]);
+                                            }
+                                        }
+                                    }
+                                    continue;
+                                }
+
+                            //}
+                            //showCache(cache);
+                            }
+                        }
+
+                        //showCache(cache);
+                        //printf("Hits: %d, Miss: %d\n",cache->hits, cache->miss );
+                    break;
+
+                //MRU
+                case 2:
+                    for (size_t i = 1; i <= atoi(data[0]); i++)
+                    {
+                        block = atoi(data[i]) % cache->sets_quantity;
+                        //printf("Block: %d, dirección: %d\n",block,atoi(data[i]));
+                        word = block%(cache->words_quantity);
+                        int j;
+                        for (j = 0; j < cache->blocks_quantity; j++)
+                        {
+                            hit = false;
+                            for (size_t k = 0; k < cache->words_quantity; k++)
+                            {
+                                if (cache->sets[0]->blocks[j]->words[k] == atoi(data[i]))
+                                {
+                                    cache->sets[0]->blocks[j]->frecuency += 1;
+                                    cache->hits += 1;
+                                    hit = true;
+                                    break;
+                                }
+                            }
+
+                            if (hit == true)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (hit == true)
+                        {
+                            continue;
+                        }
+
+                        cache->miss += 1;
+
+                        for (j = 0; j < cache->blocks_quantity; j++)
+                        {
+                            if (cache->sets[0]->blocks[j]->words[0] == -1)
+                            {
+                                for (size_t k = 0; k < cache->words_quantity; k++)
+                                {
+                                    if (k < word)
+                                    {
+                                        cache->sets[0]->blocks[j]->words[k] = atoi(data[i]) - word + k;
+                                    }
+
+                                    else if(k > word)
+                                    {
+                                        cache->sets[0]->blocks[j]->words[k] = atoi(data[i]) + word + k;
+                                    }
+
+                                    else
+                                    {
+                                        queueInsert(atoi(data[i]),cache->sets[0]->queue);
+                                        cache->sets[0]->blocks[j]->words[k] = atoi(data[i]);
+                                    }
+                                }
+                                break;
+                            }
+                        }
+
+                        if (j == cache->blocks_quantity)
+                        {
+                            block = atoi(data[i]) % cache->blocks_quantity;
+                            //printf("Block: %d, dirección: %d\n",block,atoi(data[i]));
+                            word = block%(cache->words_quantity);
+
+                            int max = -99999;
+                            for (j = 0; j < cache->blocks_quantity; j++)
+                            {
+                                if (cache->sets[0]->blocks[j]->frecuency > max)
+                                {
+                                    max = cache->sets[0]->blocks[j]->frecuency;
+                                    cache->MRUBlock = j;
+                                }
+
+                            }
+                        }
+
+                        int MRUBlock = cache->MRUBlock;
+                        if (cache->sets[0]->blocks[MRUBlock]->words[0] == -1)
+                        {
+                            for (size_t k = 0; k < cache->words_quantity; k++)
+                            {
+                                if (k < word)
+                                {
+                                    cache->sets[0]->blocks[MRUBlock]->words[k] = atoi(data[i]) - word + k;
+                                }
+
+                                else if(k > word)
+                                {
+                                    cache->sets[0]->blocks[MRUBlock]->words[k] = atoi(data[i]) + word + k;
+                                }
+
+                                else
+                                {
+                                    cache->sets[0]->blocks[MRUBlock]->words[k] = atoi(data[i]);
+                                }
+                            }
+                        }
+                        //}
+                        //showCache(cache);
+                    }
+
+                    showCache(cache);
+                    printf("Hits: %d, Miss: %d\n",cache->hits, cache->miss );
+                    exit(1);
+                break;
+
+
+
+                //LRU
+                case 3:
+                    break;
+
+            }
+                //showCache(cache);
+            break;
     }
 }
 
@@ -210,15 +537,26 @@ allCaches_struct * allCaches(int cache_size,int words_in_block)
     }
 
     allCaches_struct * allCaches = malloc(sizeof(allCaches_struct));
-    allCaches->caches = malloc(sizeof(cache_struct*)*n);
-    allCaches->caches_quantity = n;
+    //Dado que la cantidad de caches serán por el tipo de política de remplazo y los n-asociativos
+    //Pero sólo existe FIFO en directo, por lo que la cantidad será 1 + (n-1)*3.
+    allCaches->caches = malloc(sizeof(cache_struct*)*(1 + (n-1)*3));
+    allCaches->caches_quantity = 1 + (n-1)*3;
 
-    for (size_t i = 0; i < n ; i++)
+    int j = 0;
+    for (size_t i = 0; i < allCaches->caches_quantity; i++)
     {
-        sets_quantity = pow(2,i);
+        int replaceType = i%3 + 1;
+
+        sets_quantity = pow(2,j);
         blocks_quantity = (total_blocks_quantity/sets_quantity);
-        allCaches->caches[i] = build_cache(words_quantity,blocks_quantity,sets_quantity);
+        allCaches->caches[i] = build_cache(words_quantity,blocks_quantity,sets_quantity,replaceType);
         printf("Sets %d, Blocks por set: %d, Words por block: %d\n",sets_quantity,blocks_quantity, words_quantity );
+        //showCache(allCaches->caches[i]);
+        if (i%3 == 0)
+        {
+            j++;
+        }
+
     }
 
     // for (size_t i = 0; i < allCaches->caches_quantity; i++)
@@ -262,11 +600,16 @@ int main(int argc, char** argv)
     allCaches_struct * AllCaches = malloc(sizeof(allCaches_struct));
     AllCaches = allCaches(cache_size,words_in_block);
 
+
     for (size_t i = 0; i < AllCaches->caches_quantity; i++)
     {
+        printf("%s\n","holaaaaaaaaa" );
+        printf("i: %d %d\n",i,AllCaches->caches_quantity );
+        printf("%s\n","aaaaaaaa");
         populateCache(AllCaches->caches[i], fp_source_name);
     }
+
     //printf("%d\n",  cache->sets[0]->blocks[0]->words[0]);
-    printf("bloque = %d\n", ((20/4*words_in_block)) % (64));
+    //printf("bloque = %d\n", ((20/4*words_in_block)) % (64));
 
 }
