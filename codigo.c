@@ -899,24 +899,127 @@ void populateCache(cache_struct * cache, char ** data)
     }
 }
 
-cache_struct * selectBetterCache(allCaches_struct * allCaches, int dataQuantity)
+
+//Función encargada de generar un archivo con los hazards del programa
+//Entradas: ExMem Buffer, MeMWB Buffer, Ciclos del programa y validador created_2.
+//Salidas: Ninguna.
+void writeFile1(cache_struct * cache, bool * created_2)
 {
+    if (*created_2 == false)
+    {
+        FILE *fp;
+        fp=fopen("File 1.txt", "w");
+
+        if(fp == NULL)
+        {
+            printf("Error al crear el archivo %s\n","File 1.txt");
+            exit(1);
+        }
+
+        fprintf(fp, "Cache %d-asociativo \n\n", cache->blocks_quantity);
+
+        switch (cache->replaceType)
+        {
+            case 0:
+                fprintf(fp, "FIFO \n\n");
+                break;
+
+            case 1:
+                fprintf(fp, "MRU \n\n");
+                break;
+
+            case 2:
+                fprintf(fp, "LRU \n\n");
+                break;
+        }
+
+        fprintf(fp, "Cantidad Hit: %d\n", cache->hits);
+        fprintf(fp, "Cantidad Miss: %d \n\n", cache->miss);
+
+        fprintf(fp, "\n");
+        *created_2 = true;
+        fclose(fp);
+    }
+
+    else
+    {
+        FILE *fp;
+        fp=fopen("File 1.txt", "a");
+
+        if(fp == NULL)
+        {
+            printf("Error al crear el archivo %s\n","File 1.txt");
+            exit(1);
+        }
+
+        fprintf(fp, "Cache %d-asociativo \n\n", cache->blocks_quantity);
+
+        switch (cache->replaceType)
+        {
+            case 0:
+                fprintf(fp, "FIFO \n\n");
+                break;
+
+            case 1:
+                fprintf(fp, "MRU \n\n");
+                break;
+
+            case 2:
+                fprintf(fp, "LRU \n\n");
+                break;
+        }
+
+        fprintf(fp, "Cantidad Hit: %d\n", cache->hits);
+        fprintf(fp, "Cantidad Miss: %d \n\n", cache->miss);
+
+        fprintf(fp, "\n");
+        fclose(fp);
+
+    }
+
+}
+
+// {
+// void writeFile1(cache_struct * cache)
+//
+// }
+
+void selectBetterCaches(allCaches_struct * allCaches, int dataQuantity)
+{
+
+    bool created = false;
     int maxHitRatio = -99999;
     int hitRatio = 0;
     cache_struct * cache = malloc(sizeof(cache_struct));
 
-    for (size_t i = 0; i < allCaches->caches_quantity; i++)
+    allCaches_struct * bestCaches = malloc(sizeof(allCaches_struct));
+    bestCaches->caches_quantity = allCaches->caches_quantity;
+
+    bestCaches->caches = malloc(sizeof(cache_struct)*(bestCaches->caches_quantity));
     {
+
+    for (size_t i = 0; i < allCaches->caches_quantity; i++)
         hitRatio = (allCaches->caches[i]->hits)/ dataQuantity;
 
         if (hitRatio > maxHitRatio )
         {
             maxHitRatio = hitRatio;
-            cache = allCaches->caches[i];
+            //cache = allCaches->caches[i];
         }
     }
 
-    return cache;
+    for (size_t i = 0; i < allCaches->caches_quantity; i++)
+    {
+        hitRatio = (allCaches->caches[i]->hits)/ dataQuantity;
+
+        if (hitRatio == maxHitRatio )
+        {
+            writeFile1(allCaches->caches[i], &created);
+            //writeFile2(allCaches->caches[i], &created);
+            //cache = allCaches->caches[i];
+        }
+
+    }
 }
 
 allCaches_struct * allCaches(int cache_size,int words_in_block)
@@ -967,8 +1070,6 @@ int main(int argc, char** argv)
     char** data;
     int cache_size;
     int words_in_block;
-
-
 
     while ((opt = getopt(argc, argv, "n:m:p:")) != -1)
     {
