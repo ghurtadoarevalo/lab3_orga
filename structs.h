@@ -19,6 +19,9 @@ typedef struct {
 typedef struct {
     block_struct** blocks;
 	queue_struct * queue;
+	
+	int MRUBlock;
+	int LRUBlock;
 } set_struct;
 
 typedef struct {
@@ -27,8 +30,6 @@ typedef struct {
 	// 0 = Fifo, 1 = MRU, 2 = LRU
 	int replaceType;
 
-	int MRUBlock;
-	int LRUBlock;
 
     int sets_quantity;
     int blocks_quantity;
