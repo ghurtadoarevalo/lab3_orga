@@ -1,0 +1,16 @@
+Cache 8-asociativo 
+
+LRU 
+
+Cantidad Hit: 36
+Cantidad Miss: 133 
+
+
+Cache 4-asociativo 
+
+LRU 
+
+Cantidad Hit: 36
+Cantidad Miss: 133 
+
+

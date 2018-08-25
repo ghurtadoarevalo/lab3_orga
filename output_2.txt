@@ -1,0 +1,64 @@
+
+///////////////////////////////////////////////////////////////////////////////////
+
+Conjunto 0: 
+Bloque 0: 
+Palabra 0: Mem(25)
+Palabra 1: Mem(26)
+Bloque 1: 
+Palabra 0: Mem(34)
+Palabra 1: Mem(35)
+Bloque 2: 
+Palabra 0: Mem(43)
+Palabra 1: Mem(44)
+Bloque 3: 
+Palabra 0: Mem(243)
+Palabra 1: Mem(244)
+Bloque 4: 
+Palabra 0: Mem(765454)
+Palabra 1: Mem(765455)
+Bloque 5: 
+Palabra 0: Mem(98)
+Palabra 1: Mem(99)
+Bloque 6: 
+Palabra 0: Mem(76)
+Palabra 1: Mem(77)
+Bloque 7: 
+Palabra 0: Mem(6)
+Palabra 1: Mem(7)
+
+///////////////////////////////////////////////////////////////////////////////////
+
+
+///////////////////////////////////////////////////////////////////////////////////
+
+Conjunto 0: 
+Bloque 0: 
+Palabra 0: Mem(98)
+Palabra 1: Mem(99)
+Bloque 1: 
+Palabra 0: Mem(6)
+Palabra 1: Mem(7)
+Bloque 2: 
+Palabra 0: Mem(34)
+Palabra 1: Mem(35)
+Bloque 3: 
+Palabra 0: Mem(243)
+Palabra 1: Mem(244)
+
+Conjunto 1: 
+Bloque 0: 
+Palabra 0: Mem(24)
+Palabra 1: Mem(25)
+Bloque 1: 
+Palabra 0: Mem(75)
+Palabra 1: Mem(76)
+Bloque 2: 
+Palabra 0: Mem(42)
+Palabra 1: Mem(43)
+Bloque 3: 
+Palabra 0: Mem(765453)
+Palabra 1: Mem(765454)
+
+///////////////////////////////////////////////////////////////////////////////////
+
